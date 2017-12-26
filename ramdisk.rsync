@@ -1,0 +1,60 @@
+#!/sbin/openrc-run
+
+# Pau Peris
+# https://www.pauperis.com
+# pau@pauperis.com
+
+echo='/bin/echo'
+mkdir='/bin/mkdir'
+ls='/bin/ls'
+
+cmd='/usr/bin/rsync'
+rsyncopts='-avhXHxPL --numeric-ids --delete --recursive --force'
+
+src=( [cache]='/var/cache' ) 
+
+dst='/home/sys/ramdisk-backup'
+logfile='ramdisk.rsync-'
+
+description="Sync tmpfs directories to hard disk and viceversa on system shutdown and boot respectively."
+description_start="Synchronises ${dst} file system directory contents to tmpfs ${src[@]} when booting the OS."
+description_sync="Synchronises tmpfs ${src[@]} to hard disk ${dst}."
+description_stop="Synchronises tmpfs ${src[@]} to hard disk ${dst} when shutting down the OS."
+
+function createdir() { 
+    if [ ! -d "${dst}" ]
+    then
+        $mkdir "$1";
+    fi
+}
+
+extra_commands="sync"
+
+depend() {
+	after localmount
+}
+
+start() {
+	declare -a dirs=( "`ls ${dst}`");
+	for i in "${dirs[@]}"
+	do
+	    eval "$cmd $rsyncopts" "$dst/$i/" ${src[$i]} 1>> /var/log/"$logfile"restore.log 2>>/var/log/"$logfile"restore.err.log;
+	done
+	eend $?
+}
+
+sync() {
+    stop
+} 
+
+stop() {
+	createdir $dst;
+
+        for i in "${src[@]}"
+        do
+            $echo "Synching $i from tmpfs to $dst";
+            $echo [`date +"%Y-%m-%d %H:%M"`] "Synching $i from tmpfs to $dst" 1>> /var/log/"$logfile".log 2>>/var/log/"$logfile".err.log;
+            eval "$cmd $rsyncopts" $i $dst 1>> /var/log/"$logfile"backup.log 2>>/var/log/"$logfile"backup.err.log;
+        done
+	eend $?
+}
