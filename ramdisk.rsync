@@ -38,7 +38,9 @@ start() {
 	declare -a dirs=( "`ls ${dst}`");
 	for i in "${dirs[@]}"
 	do
-	    eval "$cmd $rsyncopts" "$dst/$i/" ${src[$i]} 1>> /var/log/"$logfile"restore.log 2>>/var/log/"$logfile"restore.err.log;
+	    $echo "Synching $i from tmpfs to $dst";
+            $echo [`date +"%Y-%m-%d %H:%M"`] "Synching $i from $dst to tmpfs" 1>> /var/log/"$logfile"restore.log 2>>/var/log/"$logfile"restore.err.log;
+            eval "$cmd $rsyncopts" "$dst/$i/" ${src[$i]} 1>> /var/log/"$logfile"restore.log 2>>/var/log/"$logfile"restore.err.log;
 	done
 	eend $?
 }
@@ -53,7 +55,7 @@ stop() {
         for i in "${src[@]}"
         do
             $echo "Synching $i from tmpfs to $dst";
-            $echo [`date +"%Y-%m-%d %H:%M"`] "Synching $i from tmpfs to $dst" 1>> /var/log/"$logfile".log 2>>/var/log/"$logfile".err.log;
+            $echo [`date +"%Y-%m-%d %H:%M"`] "Synching $i from tmpfs to $dst" 1>> /var/log/"$logfile"backup.log 2>>/var/log/"$logfile"backup.err.log;
             eval "$cmd $rsyncopts" $i $dst 1>> /var/log/"$logfile"backup.log 2>>/var/log/"$logfile"backup.err.log;
         done
 	eend $?
